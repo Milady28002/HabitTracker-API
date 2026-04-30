@@ -10,6 +10,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
+use App\Service\HabitStatsService;
 
 final class HabitController extends AbstractController
 {
@@ -98,7 +99,8 @@ final class HabitController extends AbstractController
         Request $request,
         UserRepository $userRepository,
         HabitRepository $habitRepository,
-        EntityManagerInterface $entityManager
+        EntityManagerInterface $entityManager,
+        HabitStatsService $statsService
     ): JsonResponse {
         $token = $request->headers->get('X-AUTH-TOKEN');
 
@@ -124,6 +126,14 @@ final class HabitController extends AbstractController
 
         $habit->setDone(!$habit->isDone());
         $entityManager->flush();
+
+        $statsService->saveStat([
+            'userId' => $user->getId(),
+            'habitId' => $habit->getId(),
+            'title' => $habit->getTitle(),
+            'done' => $habit->isDone(),
+            'date' => (new \DateTime())->format('Y-m-d H:i:s'),
+        ]);
 
         return $this->json([
             'message' => 'Statut mis à jour',
